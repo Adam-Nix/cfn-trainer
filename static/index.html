@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CFN Practical Trainer</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#fff; --text:#1c2230; --muted:#667085; --line:#dfe3ea;
+  --accent:#0b7a75; --accent-ink:#fff; --ok:#16794c; --okbg:#e6f6ee; --bad:#b42318; --badbg:#fdecea;
+  --warn:#9a6700; --warnbg:#fff4d6; --code:#0f1724; --codeink:#e6edf3; --gutter:#161d2b; --gutterink:#6b7a90;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#10141c; --panel:#171c27; --text:#e6e9f0; --muted:#98a2b3; --line:#2a3242;
+  --accent:#2bb3ab; --accent-ink:#06201f; --ok:#5fd39a; --okbg:#10291e; --bad:#ff8a80; --badbg:#2c1513;
+  --warn:#f2c14e; --warnbg:#2b2410;}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:inherit;text-decoration:none}
+header{display:flex;align-items:center;gap:6px;padding:10px 20px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;flex-wrap:wrap}
+.brand{font-weight:700;margin-right:14px}
+.brand span{color:var(--accent)}
+nav{display:flex;gap:2px;flex-wrap:wrap}
+nav a{padding:6px 12px;border-radius:8px;color:var(--muted);font-weight:500}
+nav a:hover{background:var(--bg)}
+nav a.on{background:var(--accent);color:var(--accent-ink)}
+.spacer{flex:1}
+main{max-width:1500px;margin:0 auto;padding:22px 20px 60px}
+h1{font-size:26px;margin:4px 0 4px}
+h2{font-size:17px;margin:28px 0 10px}
+h3{font-size:16px;margin:8px 0 4px}
+.sub,.muted{color:var(--muted)}
+.sub{margin:0 0 6px;max-width:70ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+a.card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.drill p{margin:2px 0}
+.meta{color:var(--muted);font-size:13px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dots{display:inline-flex;gap:3px}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.dots i.f{background:var(--accent)}
+.tag{font-size:12px;padding:1px 8px;border-radius:99px;background:var(--bg);border:1px solid var(--line);color:var(--muted)}
+.tag.ok{background:var(--okbg);color:var(--ok);border-color:transparent}
+button,.btn{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:7px 14px;border-radius:8px;font-weight:500}
+button:hover:not(:disabled){border-color:var(--accent)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button.danger{color:var(--bad)}
+select{font:inherit;padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text)}
+.ws-head{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.ws-head h1{margin:0;font-size:21px}
+.chip{font-variant-numeric:tabular-nums;font-weight:600;padding:4px 12px;border-radius:99px;background:var(--panel);border:1px solid var(--line)}
+.chip.warn{background:var(--warnbg);color:var(--warn);border-color:transparent}
+.chip.bad{background:var(--badbg);color:var(--bad);border-color:transparent}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.brief{margin:2px 0 12px;color:var(--muted)}
+.phase{font-size:13px;color:var(--muted);margin:-6px 0 10px}
+.ws-body{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(340px,1fr);gap:16px;align-items:start}
+@media (max-width:1000px){.ws-body{grid-template-columns:1fr}}
+.editor{display:flex;background:var(--code);border-radius:12px;overflow:hidden;height:calc(100vh - 230px);min-height:440px;border:1px solid var(--line)}
+.gutter{width:52px;flex:none;background:var(--gutter);color:var(--gutterink);font:13px/20px var(--mono);text-align:right;padding:12px 0;overflow:hidden;user-select:none}
+.gutter div{padding-right:8px;height:20px}
+.gutter .e{background:#5b1f1f;color:#ffb4ab;font-weight:700}
+.gutter .w{background:#4a3a0e;color:#f2c14e}
+.gutter .b{background:#143a4d;color:#7cc7ff}
+.editor textarea{flex:1;border:0;outline:0;resize:none;background:transparent;color:var(--codeink);font:13px/20px var(--mono);padding:12px 14px;white-space:pre;overflow:auto;tab-size:2;min-width:0}
+.side{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--line);background:var(--bg)}
+.tabs button{border:0;border-radius:0;background:transparent;color:var(--muted);padding:10px 14px;border-bottom:2px solid transparent}
+.tabs button.on{color:var(--text);border-bottom-color:var(--accent);background:var(--panel)}
+.pane{padding:14px 16px;max-height:calc(100vh - 290px);min-height:300px;overflow:auto}
+.banner{border-radius:10px;padding:10px 14px;margin-bottom:12px;font-weight:600}
+.banner small{display:block;font-weight:400;margin-top:2px}
+.banner.ok{background:var(--okbg);color:var(--ok)}
+.banner.bad{background:var(--badbg);color:var(--bad)}
+.banner.warn{background:var(--warnbg);color:var(--warn)}
+.banner.info{background:var(--bg);color:var(--muted)}
+.list{list-style:none;margin:0 0 14px;padding:0}
+.list li{padding:7px 0;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:flex-start}
+.list li:last-child{border-bottom:0}
+.list .mark{font-weight:700;width:20px;flex:none}
+.list .ok .mark{color:var(--ok)}
+.list .bad .mark{color:var(--bad)}
+.list .warn .mark{color:var(--warn)}
+.list li.link{cursor:pointer}
+.list li.link:hover{background:var(--bg)}
+.rule{font:12px var(--mono);color:var(--muted)}
+.bar{height:12px;background:var(--bg);border-radius:99px;overflow:hidden;border:1px solid var(--line);margin:6px 0 12px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.big{font-size:30px;font-weight:700}
+.note{color:var(--muted);font-size:13px}
+pre.code{background:var(--code);color:var(--codeink);border-radius:10px;padding:14px;overflow:auto;font:13px/1.5 var(--mono);margin:8px 0}
+.diff .a{color:#7ee787}.diff .d{color:#ff8a80}.diff .h{color:#79c0ff}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);padding:0;width:min(900px,94vw)}
+dialog::backdrop{background:#0008}
+.dlg-h{display:flex;gap:8px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+.dlg-b{padding:4px 16px 16px;max-height:70vh;overflow:auto}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:9px 16px;border-radius:99px;z-index:20;font-weight:500}
+.cardbox{max-width:720px;margin:20px auto;text-align:center;padding:30px 28px}
+.cardbox .q{font-size:20px;font-weight:600;margin:14px 0}
+.cardbox .a{white-space:pre-wrap;text-align:left;background:var(--bg);border-radius:10px;padding:14px;margin:14px 0;font:14px/1.5 var(--mono)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.chips button{padding:4px 12px;border-radius:99px;font-size:13px}
+.chips button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.split{display:grid;grid-template-columns:260px 1fr;gap:16px}
+@media (max-width:800px){.split{grid-template-columns:1fr}}
+.snlist button{display:block;width:100%;text-align:left;margin-bottom:4px;border-radius:8px}
+.snlist button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600;font-size:13px}
+.setup{display:grid;gap:12px;max-width:520px}
+.setup label{display:grid;gap:4px;font-weight:600}
+#health{display:none}
+#health.on{display:block;background:var(--badbg);color:var(--bad);padding:8px 20px;font-weight:600}
+</style>
+</head>
+<body>
+<div id="health"></div>
+<header>
+  <div class="brand">CFN <span>Trainer</span></div>
+  <nav id="nav">
+    <a href="#/drills" data-p="drills">Drills</a>
+    <a href="#/exam" data-p="exam">Exam</a>
+    <a href="#/free" data-p="free">Free practice</a>
+    <a href="#/cards" data-p="cards">Flashcards</a>
+    <a href="#/snippets" data-p="snippets">Snippets</a>
+    <a href="#/stats" data-p="stats">Stats</a>
+  </nav>
+  <div class="spacer"></div>
+  <button id="quit" title="Stop the local trainer server">Quit</button>
+</header>
+<main id="app"></main>
+
+<script>
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+
+function h(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (v === true) e.setAttribute(k, "");
+    else if (v !== false && v != null) e.setAttribute(k, v);
+  }
+  for (const c of kids.flat(Infinity)) {
+    if (c == null || c === false) continue;
+    e.append(c.nodeType ? c : document.createTextNode(String(c)));
+  }
+  return e;
+}
+
+async function api(path, body) {
+  const opt = body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+  const r = await fetch("/api/" + path, opt);
+  let j;
+  try { j = await r.json(); } catch (e) { throw new Error("Server error (" + r.status + ")"); }
+  if (!r.ok) throw new Error(j.error || "Request failed");
+  return j;
+}
+
+function toast(msg) {
+  const t = h("div", { class: "toast" }, msg);
+  document.body.append(t);
+  setTimeout(() => t.remove(), 2600);
+}
+
+function fmt(sec) {
+  sec = Math.max(0, Math.floor(sec));
+  const hh = Math.floor(sec / 3600), mm = Math.floor(sec % 3600 / 60), ss = sec % 60;
+  return (hh ? hh + ":" + String(mm).padStart(2, "0") : mm) + ":" + String(ss).padStart(2, "0");
+}
+
+function dots(level) {
+  return h("span", { class: "dots", title: "Level " + level + " of 4" }, [1, 2, 3, 4].map(i => h("i", { class: i <= level ? "f" : "" })));
+}
+
+async function copyText(txt) {
+  try { await navigator.clipboard.writeText(txt); toast("Copied"); }
+  catch (e) {
+    const ta = h("textarea", {}); ta.value = txt; document.body.append(ta); ta.select();
+    try { document.execCommand("copy"); toast("Copied"); } catch (e2) { toast("Copy failed - select and copy manually"); }
+    ta.remove();
+  }
+}
+
+/* ---------------------------------------------------------------- editor */
+function makeEditor(initial, onInput, onRun) {
+  const gut = h("div", { class: "gutter" });
+  const ta = h("textarea", { spellcheck: "false", autocapitalize: "off", autocomplete: "off", wrap: "off", "aria-label": "Template editor" });
+  ta.value = initial;
+  const wrap = h("div", { class: "editor" }, gut, ta);
+  let marks = { err: {}, warn: {} }, lastKey = "";
+
+  function render() {
+    const lines = ta.value.split("\n");
+    const blanks = {};
+    lines.forEach((l, i) => { if (/____\d+____/.test(l)) blanks[i + 1] = true; });
+    const key = lines.length + "|" + Object.keys(blanks) + "|" + Object.keys(marks.err) + "|" + Object.keys(marks.warn);
+    if (key !== lastKey) {
+      lastKey = key;
+      gut.textContent = "";
+      lines.forEach((_, i) => {
+        const n = i + 1;
+        const cls = marks.err[n] ? "e" : marks.warn[n] ? "w" : blanks[n] ? "b" : "";
+        const d = h("div", { class: cls }, String(n));
+        const tip = marks.err[n] || marks.warn[n];
+        if (tip) d.title = tip;
+        gut.append(d);
+      });
+    }
+    gut.scrollTop = ta.scrollTop;
+  }
+
+  function insert(text) {
+    ta.focus();
+    if (!document.execCommand || !document.execCommand("insertText", false, text)) {
+      const s = ta.selectionStart;
+      ta.setRangeText(text, s, ta.selectionEnd, "end");
+      ta.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  }
+
+  ta.addEventListener("keydown", e => {
+    if (e.key === "Tab") { e.preventDefault(); insert("  "); }
+    else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); onRun && onRun(); }
+    else if (e.key === "Enter" && !e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      const before = ta.value.slice(0, ta.selectionStart);
+      const line = before.slice(before.lastIndexOf("\n") + 1);
+      let ind = line.match(/^\s*/)[0];
+      if (/:\s*$/.test(line) || /^\s*-\s+\S/.test(line)) ind += "  ";
+      insert("\n" + ind);
+    }
+  });
+  ta.addEventListener("input", () => { render(); onInput && onInput(); });
+  ta.addEventListener("scroll", () => { gut.scrollTop = ta.scrollTop; });
+  render();
+  return {
+    el: wrap,
+    get: () => ta.value,
+    set(v) { ta.value = v; lastKey = ""; render(); },
+    mark(m) { marks = m; lastKey = ""; render(); },
+    goto(line) {
+      const lines = ta.value.split("\n");
+      line = Math.max(1, Math.min(line, lines.length));
+      let start = 0;
+      for (let i = 0; i < line - 1; i++) start += lines[i].length + 1;
+      ta.focus();
+      ta.setSelectionRange(start, start + lines[line - 1].length);
+      ta.scrollTop = Math.max(0, (line - 4) * 20);
+    },
+    render,
+  };
+}
+
+/* ---------------------------------------------------------------- workspace */
+const SAMPLE = `AWSTemplateFormatVersion: '2010-09-09'
+Description: Scratch template - replace me
+
+Resources:
+  MarkVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      Tags:
+        - Key: Name
+          Value: scratch-vpc
+
+Outputs:
+  VpcId:
+    Description: ID of the VPC
+    Value: !Ref MarkVPC
+`;
+
+let SNIPPETS = null;
+
+function mountWorkspace(root, cfg) {
+  const free = cfg.mode === "free", exam = cfg.mode === "exam";
+  const skew = cfg.now ? cfg.now * 1000 - Date.now() : 0;
+  const S = { ended: !!cfg.ended, locked: !!cfg.locked, hints: null, last: null, seq: 0, busy: false, tab: "results", snippet: null, hintsUsed: !!cfg.hints_used };
+  let saveT = null, liveT = null, timerI = null;
+  const nowSrv = () => (Date.now() + skew) / 1000;
+
+  const timer = h("span", { class: "chip" }, "");
+  const phase = h("div", { class: "phase" });
+  const checkBtn = h("button", { class: "primary", onclick: () => runCheck(true), title: "Ctrl+Enter" }, "Check");
+  const solBtn = h("button", { onclick: showSolution }, "Show solution");
+  const actions = h("div", { class: "actions" });
+  const head = h("div", { class: "ws-head" }, h("h1", {}, cfg.title), !free && h("span", { class: "tag" }, "Level " + cfg.level), timer, actions);
+
+  const editor = makeEditor(cfg.text, onInput, () => runCheck(true));
+  const tabs = h("div", { class: "tabs" });
+  const pane = h("div", { class: "pane" });
+  const side = h("aside", { class: "side" }, tabs, pane);
+  root.append(head, cfg.brief && h("div", { class: "brief" }, cfg.brief), phase, h("div", { class: "ws-body" }, editor.el, side));
+
+  const tabDefs = free ? [["results", "Results"], ["complexity", "Complexity"], ["snippets", "Snippets"]]
+    : [["results", "Results"], ["task", "Task"], ["complexity", "Complexity"], ["snippets", "Snippets"]];
+  tabDefs.forEach(([id, label]) => tabs.append(h("button", { "data-t": id, onclick: () => setTab(id) }, label)));
+
+  if (free) {
+    actions.append(h("button", { onclick: () => { if (!editor.get().trim() || confirm("Replace the editor with the sample template?")) { editor.set(SAMPLE); onInput(); } } }, "Load sample"), checkBtn);
+  } else if (exam) {
+    actions.append(solBtn, checkBtn, h("button", { class: "danger", id: "finish", onclick: finishExam }, "Finish exam"));
+  } else {
+    actions.append(h("button", { onclick: restartDrill }, "Restart drill"), solBtn, checkBtn);
+  }
+  updateLocks();
+
+  function updateLocks() { solBtn.disabled = S.locked; const f = $("#finish", actions); if (f) f.disabled = S.ended; }
+
+  function setTab(id) {
+    S.tab = id;
+    tabs.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.t === id));
+    renderPane();
+  }
+
+  /* ---- timer */
+  function tick() {
+    if (free) return;
+    if (exam) {
+      const left = cfg.deadline - nowSrv(), total = (cfg.exam_minutes || 120) * 60, used = total - left;
+      if (S.ended) { timer.textContent = "Exam finished"; timer.className = "chip"; phase.textContent = ""; return; }
+      timer.textContent = left > 0 ? fmt(left) + " left" : "TIME UP";
+      timer.className = "chip" + (left <= 0 ? " bad" : left < 900 ? " warn" : "");
+      const p = used / total;
+      phase.textContent = left <= 0 ? "Time is up. Press Finish exam to grade what you have."
+        : p < 0.375 ? "Phase 1: get the base template deploying (all blanks filled, lint clean)."
+        : p < 0.875 ? "Phase 2: add complexity - one small piece at a time, check after each."
+        : "Phase 3: final checks. Lint clean, descriptions, tags, outputs. No risky changes now.";
+      if (!S.ended && S.locked && left <= 0) { S.locked = false; updateLocks(); renderPane(); }
+    } else {
+      const el = nowSrv() - cfg.start;
+      timer.textContent = fmt(el) + " / ~" + cfg.target_minutes + " min";
+      timer.className = "chip" + (el > cfg.target_minutes * 60 ? " warn" : "");
+    }
+  }
+  if (!free) { tick(); timerI = setInterval(tick, 1000); }
+
+  /* ---- saving + live check */
+  function onInput() {
+    clearTimeout(saveT); clearTimeout(liveT);
+    saveT = setTimeout(() => api("save", { key: free ? "free" : cfg.key, text: editor.get() }).catch(() => { }), 700);
+    liveT = setTimeout(() => runCheck(false), 1300);
+  }
+
+  async function runCheck(full) {
+    if (S.busy && full) return;
+    const mySeq = ++S.seq;
+    if (full) {
+      S.busy = true; checkBtn.disabled = true; checkBtn.textContent = "Checking...";
+      setTab("results");
+      pane.textContent = "";
+      pane.append(h("div", { class: "banner info" }, "Running cfn-lint, requirements and the mock deploy...", h("small", {}, "The mock deploy can take a few seconds.")));
+    }
+    try {
+      const r = free ? await api("free", { text: editor.get(), full })
+        : await api("check", { key: cfg.key, text: editor.get(), full });
+      if (!full && mySeq !== S.seq) return;
+      S.last = { r, full };
+      applyMarks(r);
+      renderPane();
+      if (full && !free) toast(r.passed ? "PASS - base is solid" : "Not yet - see Results");
+    } catch (e) {
+      if (full || mySeq === S.seq) { pane.textContent = ""; pane.append(h("div", { class: "banner bad" }, "Check failed", h("small", {}, e.message))); }
+    } finally {
+      if (full) { S.busy = false; checkBtn.disabled = false; checkBtn.textContent = "Check"; }
+    }
+  }
+
+  function applyMarks(r) {
+    const m = { err: {}, warn: {} };
+    ((r.lint && r.lint.items) || []).forEach(i => {
+      const tgt = i.level === "Error" ? m.err : m.warn;
+      if (i.line > 0) tgt[i.line] = (tgt[i.line] ? tgt[i.line] + " | " : "") + i.rule + " " + i.message;
+    });
+    editor.mark(m);
+  }
+
+  /* ---- panes */
+  function renderPane() {
+    pane.textContent = "";
+    if (S.tab === "results") pane.append(resultsView());
+    else if (S.tab === "task") pane.append(taskView());
+    else if (S.tab === "complexity") pane.append(complexityView());
+    else pane.append(snippetsView());
+  }
+
+  function jumpList(arr) {
+    return h("ul", { class: "list" }, arr);
+  }
+
+  function resultsView() {
+    const f = h("div", {});
+    const L = S.last;
+    if (!L) { f.append(h("div", { class: "banner info" }, "Edit the template. Checks run automatically when you pause typing; press Check for the full grade.")); return f; }
+    const r = L.r;
+    if (r.yaml_error) { f.append(h("div", { class: "banner bad" }, "YAML does not parse", h("small", {}, r.yaml_error))); return f; }
+    if (r.blanks && r.blanks.length) {
+      f.append(h("div", { class: "banner warn" }, r.blanks.length + " blank" + (r.blanks.length > 1 ? "s" : "") + " still to fill", h("small", {}, "Fill every ____N____ first. Click one to jump to it.")));
+      f.append(jumpList(r.blanks.map(b => h("li", { class: "link", onclick: () => jumpToBlank(b) }, h("span", { class: "mark" }, "•"), b))));
+      return f;
+    }
+    const L2 = r.lint, reqOk = r.reqs.filter(x => x.ok).length;
+    if (free) f.append(h("div", { class: "banner " + (L2.errors ? "bad" : "ok") }, L2.errors ? L2.errors + " lint error(s)" : "No lint errors", h("small", {}, L2.warnings + " warning(s)")));
+    else f.append(h("div", { class: "banner " + (r.passed ? "ok" : "bad") }, r.passed ? "PASS - base is solid" : "Not yet",
+      h("small", {}, r.passed ? "Now add complexity - see the Complexity tab." : "Fix the red items. Lint errors and failed requirements both count.")));
+    f.append(h("h3", {}, "cfn-lint: " + L2.errors + " error(s), " + L2.warnings + " warning(s)"));
+    if (!L2.items.length) f.append(h("p", { class: "note" }, "Clean."));
+    else f.append(jumpList(L2.items.map(i => h("li", { class: "link " + (i.level === "Error" ? "bad" : "warn"), onclick: () => i.line > 0 && editor.goto(i.line) },
+      h("span", { class: "mark" }, i.level === "Error" ? "✕" : "!"), h("div", {}, h("div", {}, i.message), h("div", { class: "rule" }, i.rule + (i.line > 0 ? " · line " + i.line : "")))))));
+    if (r.reqs.length) {
+      f.append(h("h3", {}, "Requirements: " + reqOk + "/" + r.reqs.length));
+      f.append(jumpList(r.reqs.map(x => h("li", { class: x.ok ? "ok" : "bad" }, h("span", { class: "mark" }, x.ok ? "✓" : "✕"), h("div", {}, x.desc, x.msg && h("div", { class: "rule" }, x.msg))))));
+    }
+    if (L.full && r.moto) {
+      const m = r.moto, good = m.status === "CREATE_COMPLETE";
+      f.append(h("h3", {}, "Mock deploy"));
+      f.append(h("div", { class: "banner " + (good ? "ok" : "warn") }, good ? "CREATE_COMPLETE (" + m.resources + " resources)" : m.status,
+        h("small", {}, good ? "Fake AWS (moto) accepted it. Moto does NOT check AMI ids, key pairs, IAM permissions or WaitCondition signals - only real AWS proves it deploys." : (m.error || "") + " Moto is an approximation - this may be a moto limitation rather than your template.")));
+    } else if (!L.full) f.append(h("p", { class: "note" }, "Quick check only (lint + requirements). Press Check for the mock deploy too."));
+    return f;
+  }
+
+  function jumpToBlank(b) {
+    const lines = editor.get().split("\n");
+    const i = lines.findIndex(l => l.includes(b));
+    if (i >= 0) editor.goto(i + 1);
+  }
+
+  function taskView() {
+    const f = h("div", {});
+    f.append(h("p", {}, cfg.brief));
+    f.append(h("p", { class: "note" }, cfg.lab));
+    if (cfg.kind === "fill") {
+      const blanks = [...new Set(editor.get().match(/____\d+____/g) || [])].sort((a, b) => parseInt(a.replace(/_/g, "")) - parseInt(b.replace(/_/g, "")));
+      f.append(h("h3", {}, blanks.length + " of " + cfg.blank_count + " blanks still open"));
+      const hb = h("button", { disabled: S.locked, onclick: loadHints }, S.hints ? "Hints shown" : S.locked ? "Hints locked during exam" : "Show hints (logged)");
+      if (S.hints) hb.disabled = true;
+      f.append(h("p", {}, hb));
+      f.append(jumpList(blanks.map(b => {
+        const n = parseInt(b.replace(/_/g, ""));
+        return h("li", { class: "link", onclick: () => jumpToBlank(b) }, h("span", { class: "mark" }, n), h("div", {}, S.hints ? S.hints[n - 1] : h("span", { class: "note" }, "hint hidden - try recalling it first")));
+      })));
+    } else {
+      f.append(h("p", { class: "note" }, "Read the cfn-lint messages, then the requirements list - together they tell you what is still broken. Click a message to jump to its line."));
+    }
+    if (cfg.bonus_ideas && cfg.bonus_ideas.length) {
+      f.append(h("h3", {}, "Once the base passes, try"));
+      f.append(h("ul", {}, cfg.bonus_ideas.map(x => h("li", {}, x))));
+    }
+    return f;
+  }
+
+  async function loadHints() {
+    try { const r = await api("hints", { key: cfg.key }); S.hints = r.hints; S.hintsUsed = true; renderPane(); }
+    catch (e) { toast(e.message); }
+  }
+
+  function complexityView() {
+    const f = h("div", {});
+    const b = S.last && S.last.r.bonus;
+    if (!b) { f.append(h("div", { class: "banner info" }, "Your complexity score appears once the template parses and every blank is filled.")); return f; }
+    f.append(h("div", { class: "big" }, b.got + " / " + b.total));
+    f.append(h("div", { class: "bar" }, h("i", { style: "width:" + Math.round(100 * b.got / b.total) + "%" })));
+    f.append(h("p", { class: "note" }, "This is my own checklist of things that usually look good in an IaC practical. It is not your lecturer's rubric."));
+    f.append(h("h3", {}, "Add next (best points for the effort)"));
+    f.append(jumpList(b.missing.slice(0, 8).map(m => h("li", { class: m.snippet ? "link" : "", onclick: () => m.snippet && openSnippet(m.snippet) },
+      h("span", { class: "mark" }, "+" + m.points), h("div", {}, m.label, h("div", { class: "rule" }, "effort " + m.effort + "/3" + (m.snippet ? " · click for a snippet" : "")))))));
+    f.append(h("p", { class: "note" }, "Rule: add ONE thing, run Check, then the next. A broken ambitious template scores worse than a plain one."));
+    if (b.have.length) { f.append(h("h3", {}, "Already have")); f.append(jumpList(b.have.map(x => h("li", { class: "ok" }, h("span", { class: "mark" }, "✓"), x)))); }
+    return f;
+  }
+
+  function openSnippet(name) { S.snippet = name; setTab("snippets"); }
+
+  function snippetsView() {
+    const f = h("div", {});
+    if (!SNIPPETS) { f.append(h("p", { class: "note" }, "Loading...")); return f; }
+    const sel = h("select", { onchange: e => { S.snippet = e.target.value; renderPane(); } }, SNIPPETS.map(s => h("option", { value: s.name, selected: s.name === (S.snippet || SNIPPETS[0].name) }, s.title)));
+    const cur = SNIPPETS.find(s => s.name === (S.snippet || SNIPPETS[0].name));
+    f.append(h("p", {}, sel, " ", h("button", { onclick: () => copyText(cur.body) }, "Copy")));
+    f.append(h("pre", { class: "code" }, cur.body));
+    f.append(h("p", { class: "note" }, "Fragments - merge them into the right section (Parameters, Resources, Outputs...) and re-check."));
+    return f;
+  }
+
+  /* ---- dialogs and session actions */
+  async function showSolution() {
+    if (S.locked) return;
+    if (!S.ended && !free && cfg.kind && !confirm("Show the solution? This is logged as 'peeked'.")) return;
+    try {
+      const r = await api("reveal", { key: cfg.key, text: editor.get() });
+      const dlg = h("dialog", {});
+      const body = h("div", { class: "dlg-b" });
+      const diff = h("pre", { class: "code diff" }, r.diff.length ? r.diff.map(l => h("div", { class: l.startsWith("+") && !l.startsWith("+++") ? "a" : l.startsWith("-") && !l.startsWith("---") ? "d" : l.startsWith("@@") ? "h" : "" }, l || " ")) : "No differences - your file already matches the solution.");
+      const full = h("pre", { class: "code" }, r.solution);
+      const show = which => { body.textContent = ""; body.append(which === "diff" ? diff : full); };
+      dlg.append(h("div", { class: "dlg-h" }, h("strong", {}, "Solution"), h("button", { onclick: () => show("diff") }, "Diff vs yours"), h("button", { onclick: () => show("full") }, "Full solution"),
+        h("button", { onclick: () => copyText(r.solution) }, "Copy"), h("span", { class: "spacer" }), h("button", { onclick: () => { dlg.close(); dlg.remove(); } }, "Close")), body);
+      document.body.append(dlg); show("diff"); dlg.showModal();
+    } catch (e) { toast(e.message); }
+  }
+
+  async function restartDrill() {
+    if (!confirm("Restart from the blank template? Your current work will be replaced.")) return;
+    try { await api("open", { id: cfg.id, restart: true }); route(); } catch (e) { toast(e.message); }
+  }
+
+  async function finishExam() {
+    if (!confirm("Finish the exam and grade it now?")) return;
+    try {
+      const r = await api("finish", { text: editor.get() });
+      S.ended = true; S.locked = false; S.last = { r, full: true };
+      applyMarks(r); updateLocks(); tick(); setTab("results");
+      toast(r.passed ? "Exam finished - PASS" : "Exam finished");
+    } catch (e) { toast(e.message); }
+  }
+
+  function leave() {
+    clearInterval(timerI); clearTimeout(saveT); clearTimeout(liveT);
+    try { fetch("/api/save", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: free ? "free" : cfg.key, text: editor.get() }) }); } catch (e) { }
+  }
+
+  (async () => {
+    if (!SNIPPETS) { try { SNIPPETS = (await api("snippets")).snippets; renderPane(); } catch (e) { } }
+    if (S.hintsUsed && !S.locked && cfg.kind === "fill") { try { S.hints = (await api("hints", { key: cfg.key })).hints; renderPane(); } catch (e) { } }
+  })();
+  setTab("results");
+  setTimeout(() => runCheck(false), 250);
+  return leave;
+}
+
+/* ---------------------------------------------------------------- pages */
+let teardown = null;
+
+async function pageDrills(app) {
+  const d = await api("drills");
+  app.append(h("h1", {}, "Practice drills"), h("p", { class: "sub" }, "Pick one, fill the blanks, press Check. Everything is graded on your own computer with the real cfn-lint."));
+  for (const [label, kind] of [["Fill in the template", "fill"], ["Find and fix the bugs", "debug"]]) {
+    app.append(h("h2", {}, label));
+    app.append(h("div", { class: "grid" }, d.drills.filter(x => x.kind === kind).map(x =>
+      h("a", { class: "card drill", href: "#/drill/" + x.id },
+        h("div", { class: "row" }, dots(x.level), x.done ? h("span", { class: "tag ok" }, "done ×" + x.done) : x.in_progress ? h("span", { class: "tag" }, "in progress") : null),
+        h("h3", {}, x.title), h("p", { class: "muted" }, x.lab),
+        h("p", { class: "meta" }, (x.kind === "fill" ? x.blanks + " blanks" : "bug hunt") + " · about " + x.minutes + " min" + (x.best_bonus ? " · best complexity " + x.best_bonus : ""))))));
+  }
+}
+
+async function pageDrill(app, id) {
+  const s = await api("open", { id });
+  teardown = mountWorkspace(app, Object.assign({ mode: "drill" }, s));
+}
+
+async function pageExam(app) {
+  const d = await api("drills");
+  app.append(h("h1", {}, "Exam mode"), h("p", { class: "sub" }, "One template, a hard deadline, no hints and no solution until you finish. Get the base working first, then add complexity."));
+  if (d.exam) {
+    app.append(h("div", { class: "card", style: "max-width:520px;margin:16px 0" }, h("h3", {}, "Exam in progress"), h("p", { class: "muted" }, d.exam.title),
+      h("p", {}, h("a", { class: "btn primary", href: "#/exam/run" }, "Resume exam"))));
+  }
+  const mins = h("select", {}, [120, 90, 60, 45].map(m => h("option", { value: m }, m + " minutes" + (m === 120 ? " (real length)" : ""))));
+  const which = h("select", {}, h("option", { value: "" }, "Random (harder drills)"), d.drills.filter(x => x.kind === "fill").map(x => h("option", { value: x.id }, x.title)));
+  app.append(h("div", { class: "card setup" }, h("h3", {}, d.exam ? "Start a new exam (replaces the one above)" : "Start an exam"),
+    h("label", {}, "Time limit", mins), h("label", {}, "Template", which),
+    h("button", { class: "primary", onclick: async () => {
+      if (d.exam && !confirm("This abandons the exam in progress. Continue?")) return;
+      try { await api("open", { exam: true, id: which.value || null, minutes: +mins.value, restart: true }); location.hash = "#/exam/run"; } catch (e) { toast(e.message); }
+    } }, "Start the clock")));
+}
+
+async function pageExamRun(app) {
+  let s;
+  try { s = await api("exam_session"); } catch (e) { location.hash = "#/exam"; return; }
+  teardown = mountWorkspace(app, Object.assign({ mode: "exam" }, s));
+}
+
+async function pageFree(app) {
+  const t = await api("free_text");
+  app.append(h("p", { class: "sub" }, "Paste or write any CloudFormation template (your own, or one from a lab) to lint it, mock-deploy it and score its complexity."));
+  teardown = mountWorkspace(app, { mode: "free", title: "Free practice", text: t.text, level: 0 });
+}
+
+async function pageCards(app) {
+  let tag = "", deck = [], i = 0, shown = false, right = 0, tags = [], done = false;
+  const box = h("div", {});
+  app.append(h("h1", {}, "Flashcards"), h("p", { class: "sub" }, "Say or type the answer first, then reveal. Cards you miss come back more often."), box);
+  async function load() {
+    const d = await api("cards?n=10" + (tag ? "&tag=" + encodeURIComponent(tag) : ""));
+    deck = d.cards; tags = d.tags; i = 0; right = 0; shown = false; done = false; draw();
+  }
+  function draw() {
+    box.textContent = "";
+    box.append(h("div", { class: "chips" }, h("button", { class: tag ? "" : "on", onclick: () => { tag = ""; load(); } }, "All"),
+      tags.map(t => h("button", { class: tag === t ? "on" : "", onclick: () => { tag = t; load(); } }, t))));
+    if (done || !deck.length) {
+      box.append(h("div", { class: "card cardbox" }, h("div", { class: "big" }, right + " / " + deck.length), h("p", { class: "muted" }, "Round finished."), h("button", { class: "primary", onclick: load }, "Another 10")));
+      return;
+    }
+    const c = deck[i];
+    box.append(h("div", { class: "card cardbox" }, h("div", { class: "row" }, h("span", { class: "tag" }, c.tag), h("span", { class: "meta" }, (i + 1) + " / " + deck.length)),
+      h("div", { class: "q" }, c.q),
+      shown ? h("div", {}, h("div", { class: "a" }, c.a), h("button", { class: "primary", onclick: () => grade(true) }, "Got it (y)"), " ", h("button", { onclick: () => grade(false) }, "Missed (n)"))
+        : h("button", { class: "primary", onclick: () => { shown = true; draw(); } }, "Reveal (space)")));
+  }
+  async function grade(ok) {
+    try { await api("card", { i: deck[i].i, correct: ok }); } catch (e) { }
+    if (ok) right++;
+    i++; shown = false; if (i >= deck.length) done = true; draw();
+  }
+  const key = e => {
+    if (e.target.tagName === "SELECT") return;
+    if (!shown && (e.key === " " || e.key === "Enter") && !done) { e.preventDefault(); shown = true; draw(); }
+    else if (shown && e.key.toLowerCase() === "y") grade(true);
+    else if (shown && e.key.toLowerCase() === "n") grade(false);
+  };
+  document.addEventListener("keydown", key);
+  teardown = () => document.removeEventListener("keydown", key);
+  await load();
+}
+
+async function pageSnippets(app) {
+  if (!SNIPPETS) SNIPPETS = (await api("snippets")).snippets;
+  app.append(h("h1", {}, "Snippets"), h("p", { class: "sub" }, "Tested blocks for the 'extra complexity' marks. Know what each does before you paste it."));
+  const list = h("div", { class: "snlist" }), view = h("div", {});
+  let cur = SNIPPETS[0].name;
+  function draw() {
+    list.textContent = ""; view.textContent = "";
+    SNIPPETS.forEach(s => list.append(h("button", { class: s.name === cur ? "on" : "", onclick: () => { cur = s.name; draw(); } }, s.title)));
+    const s = SNIPPETS.find(x => x.name === cur);
+    view.append(h("div", { class: "row" }, h("h3", {}, s.title), h("button", { onclick: () => copyText(s.body) }, "Copy")), h("pre", { class: "code" }, s.body));
+  }
+  draw();
+  app.append(h("div", { class: "split" }, list, view));
+}
+
+async function pageStats(app) {
+  const d = await api("stats");
+  app.append(h("h1", {}, "Your progress"));
+  const c = d.cards;
+  app.append(h("div", { class: "grid", style: "margin:12px 0" },
+    h("div", { class: "card" }, h("div", { class: "big" }, c.known + " / " + c.total), h("p", { class: "muted" }, "flashcards known")),
+    h("div", { class: "card" }, h("div", { class: "big" }, c.learning), h("p", { class: "muted" }, "flashcards still learning")),
+    h("div", { class: "card" }, h("div", { class: "big" }, d.history.length), h("p", { class: "muted" }, "recent drill completions"))));
+  if (!d.history.length) { app.append(h("p", { class: "muted" }, "No completed drills yet. Pass one and it shows up here.")); return; }
+  app.append(h("table", {}, h("thead", {}, h("tr", {}, ["Drill", "Minutes", "Hints", "Peeked", "Complexity", "When"].map(x => h("th", {}, x)))),
+    h("tbody", {}, d.history.map(x => h("tr", {}, h("td", {}, (d.titles[x.id] || x.id) + (x.exam ? (x.passed === false ? " (exam - not passed)" : " (exam)") : "")), h("td", {}, x.minutes), h("td", {}, x.hints ? "yes" : "-"), h("td", {}, x.revealed ? "yes" : "-"), h("td", {}, x.bonus), h("td", {}, new Date(x.ts * 1000).toLocaleString()))))));
+}
+
+async function route() {
+  if (teardown) { try { teardown(); } catch (e) { } teardown = null; }
+  const parts = location.hash.replace(/^#\/?/, "").split("/");
+  const page = parts[0] || "drills", arg = parts[1];
+  document.querySelectorAll("#nav a").forEach(a => a.classList.toggle("on", a.dataset.p === page));
+  const app = $("#app");
+  app.textContent = "";
+  window.scrollTo(0, 0);
+  try {
+    if (page === "drills") await pageDrills(app);
+    else if (page === "drill") await pageDrill(app, arg);
+    else if (page === "exam" && arg === "run") await pageExamRun(app);
+    else if (page === "exam") await pageExam(app);
+    else if (page === "free") await pageFree(app);
+    else if (page === "cards") await pageCards(app);
+    else if (page === "snippets") await pageSnippets(app);
+    else if (page === "stats") await pageStats(app);
+    else location.hash = "#/drills";
+  } catch (e) {
+    app.append(h("div", { class: "banner bad" }, "Something went wrong", h("small", {}, e.message)), h("p", {}, h("a", { class: "btn", href: "#/drills" }, "Back to drills")));
+  }
+}
+
+$("#quit").addEventListener("click", async () => {
+  if (!confirm("Stop the trainer? Your progress is saved.")) return;
+  try { await api("quit", {}); } catch (e) { }
+  document.body.innerHTML = "";
+  document.body.append(h("main", {}, h("h1", {}, "Trainer stopped"), h("p", { class: "sub" }, "You can close this tab. Run start.bat / start.command to open it again.")));
+});
+
+window.addEventListener("hashchange", route);
+api("health").then(hh => {
+  if (!hh.cfn_lint) { const b = $("#health"); b.classList.add("on"); b.textContent = "cfn-lint is not installed, so grading will not work. Close this and run start.bat / start.command again."; }
+}).catch(() => { });
+route();
+</script>
+</body>
+</html>

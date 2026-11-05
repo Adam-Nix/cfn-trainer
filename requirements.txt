@@ -1,0 +1,4 @@
+cfn-lint
+moto[cloudformation,ec2,iam,s3,sns]
+pyyaml
+boto3

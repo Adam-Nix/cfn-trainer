@@ -1,0 +1,9 @@
+work/
+users/
+progress.json
+.venv/
+__pycache__/
+*.pyc
+*.env
+users.txt
+data/
