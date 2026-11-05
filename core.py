@@ -1,7 +1,9 @@
 """Trainer engine: sessions, grading, flashcards, stats. No printing, no CLI - used by app.py (the web UI)."""
+import contextvars
 import difflib
 import importlib.util
 import json
+import os
 import random
 import re
 import shutil
@@ -19,20 +21,72 @@ from challenges import BY_ID, CHALLENGES, build
 from snippets import SNIPPETS
 
 ROOT = Path(__file__).resolve().parent
-WORK = ROOT / "work"
-STATE = ROOT / "progress.json"
-LOCK = threading.RLock()
+# Where state lives. Default (= ROOT) keeps the old single-user layout: ./work and ./progress.json.
+DATA = Path(os.environ.get("TRAINER_DATA") or ROOT)
 MAX_TEXT = 300_000
+LOCAL_USER = "local"
+USER_RE = re.compile(r"^[a-z0-9_-]{1,32}$")
+# Current user, set per request by app.py. "local" = login-less single-user mode.
+USER = contextvars.ContextVar("trainer_user", default=LOCAL_USER)
+
+_LOCKS = {}
+_LOCKS_GUARD = threading.Lock()
+# Cap concurrent cfn-lint / moto subprocesses so one user cannot freeze the box.
+MAX_JOBS = max(1, int(os.environ.get("TRAINER_MAX_JOBS", "2")))
+JOBS = threading.BoundedSemaphore(MAX_JOBS)
+JOB_WAIT = 120  # seconds a request waits for a free slot before giving up
 
 
 class UserError(Exception):
     pass
 
 
+# ------------------------------------------------------------------ per-user paths / locks
+def clean_user(name):
+    """Lower-case and validate a username ([a-z0-9_-], 1-32 chars). Raises UserError otherwise."""
+    name = (name or "").strip().lower()
+    if not USER_RE.match(name):
+        raise UserError("Bad username")
+    return name
+
+
+def _base():
+    u = clean_user(USER.get())
+    return DATA if u == LOCAL_USER else DATA / "users" / u
+
+
+def _work():
+    p = _base() / "work"
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+def _state_path():
+    _base().mkdir(parents=True, exist_ok=True)
+    return _base() / "progress.json"
+
+
+def _lock():
+    """Re-entrant lock for the current user only; other users are not blocked."""
+    u = clean_user(USER.get())
+    with _LOCKS_GUARD:
+        return _LOCKS.setdefault(u, threading.RLock())
+
+
+def _run(cmd, **kw):
+    """subprocess.run behind the global job semaphore."""
+    if not JOBS.acquire(timeout=JOB_WAIT):
+        raise UserError("The server is busy grading other submissions. Try again in a moment.")
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL, **kw)
+    finally:
+        JOBS.release()
+
+
 # ------------------------------------------------------------------ state
 def _load():
     try:
-        s = json.loads(STATE.read_text())
+        s = json.loads(_state_path().read_text())
     except Exception:  # noqa: BLE001
         s = {}
     s.setdefault("sessions", {})
@@ -42,7 +96,10 @@ def _load():
 
 
 def _save(s):
-    STATE.write_text(json.dumps(s, indent=1))
+    p = _state_path()
+    tmp = p.with_name(p.name + ".tmp")
+    tmp.write_text(json.dumps(s, indent=1))
+    os.replace(tmp, p)
 
 
 def health():
@@ -59,8 +116,7 @@ def _ch(cid):
 def _file(key):
     if key not in BY_ID and key not in ("exam", "free"):
         raise UserError("Bad session key")
-    WORK.mkdir(exist_ok=True)
-    return WORK / (key + ".yaml")
+    return _work() / (key + ".yaml")
 
 
 def _clip(text):
@@ -109,7 +165,7 @@ def _payload(key):
 
 
 def open_session(cid=None, exam=False, minutes=120, restart=False):
-    with LOCK:
+    with _lock():
         st = _load()
         key = "exam" if exam else cid
         if exam:
@@ -142,7 +198,7 @@ def exam_session():
 
 
 def restart_timer(key):
-    with LOCK:
+    with _lock():
         st = _load()
         if key not in st["sessions"] or key == "exam":
             raise UserError("No timer to reset")
@@ -153,7 +209,7 @@ def restart_timer(key):
 
 def save_text(key, text):
     _clip(text)
-    with LOCK:
+    with _lock():
         if key != "free" and key not in _load()["sessions"]:
             raise UserError("Session not started")
         _file(key).write_text(text)
@@ -166,7 +222,7 @@ def get_free():
 
 
 def hints(key):
-    with LOCK:
+    with _lock():
         st = _load()
         s = st["sessions"].get(key)
         if not s:
@@ -180,7 +236,7 @@ def hints(key):
 
 def reveal(key, text):
     _clip(text)
-    with LOCK:
+    with _lock():
         st = _load()
         s = st["sessions"].get(key)
         if not s:
@@ -198,19 +254,19 @@ def reveal(key, text):
 def _lint(text):
     exe = shutil.which("cfn-lint")
     cmd = [exe] if exe else [sys.executable, "-m", "cfnlint"]
-    WORK.mkdir(exist_ok=True)
-    tmpdir = WORK / ".tmp"
+    tmpdir = _work() / ".tmp"
     tmpdir.mkdir(exist_ok=True)
     with tempfile.NamedTemporaryFile("w", suffix=".yaml", dir=tmpdir, delete=False) as f:
         f.write(text)
         path = f.name
     try:
         # "--" ends the option list: --regions takes many values and would otherwise swallow the file path
-        r = subprocess.run(cmd + ["-f", "json", "--regions", "us-east-1", "--", path], capture_output=True, text=True,
-                           timeout=90, stdin=subprocess.DEVNULL)
+        r = _run(cmd + ["-f", "json", "--regions", "us-east-1", "--", path], timeout=90)
         if not r.stdout.strip():
             raise ValueError("cfn-lint produced no output (rc=%s): %s" % (r.returncode, r.stderr.strip()[-250:]))
         data = json.loads(r.stdout)
+    except UserError:
+        raise
     except Exception as e:  # noqa: BLE001
         data = [{"Rule": {"Id": "E0000"}, "Message": "cfn-lint could not run: %s" % e, "Level": "Error",
                  "Location": {"Start": {"LineNumber": 0}}}]
@@ -228,8 +284,7 @@ def _lint(text):
 
 
 def _moto(text, ch):
-    WORK.mkdir(exist_ok=True)
-    tmpdir = WORK / ".tmp"
+    tmpdir = _work() / ".tmp"
     tmpdir.mkdir(exist_ok=True)
     files = []
     try:
@@ -242,8 +297,10 @@ def _moto(text, ch):
                 f.write(build(BY_ID[ch["prestack"]])[1])
                 files.append(f.name)
             cmd.append(files[1])
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=90, stdin=subprocess.DEVNULL)
+        r = _run(cmd, timeout=90)
         return json.loads(r.stdout.strip().splitlines()[-1])
+    except UserError:
+        raise
     except subprocess.TimeoutExpired:
         return {"status": "TIMEOUT", "error": "mock deploy took more than 90s"}
     except Exception as e:  # noqa: BLE001
@@ -289,7 +346,7 @@ def grade(text, ch=None, full=True):
 
 def check(key, text, full=True):
     _clip(text)
-    with LOCK:
+    with _lock():
         st = _load()
         s = st["sessions"].get(key)
         if not s:
@@ -297,7 +354,7 @@ def check(key, text, full=True):
         _file(key).write_text(text)
         ch = BY_ID[s["id"]]
     res = grade(text, ch, full)
-    with LOCK:
+    with _lock():
         st = _load()
         s = st["sessions"][key]
         if full and res["passed"] and not s.get("done"):
@@ -314,7 +371,7 @@ def check(key, text, full=True):
 
 def finish_exam(text):
     res = check("exam", text, True)
-    with LOCK:
+    with _lock():
         st = _load()
         s = st["sessions"].get("exam")
         if s:
@@ -354,7 +411,7 @@ def cards_next(n=10, tag=None):
 
 
 def card_answer(i, correct):
-    with LOCK:
+    with _lock():
         st = _load()
         if not isinstance(i, int) or not 0 <= i < len(CARDS):
             raise UserError("Bad card")
