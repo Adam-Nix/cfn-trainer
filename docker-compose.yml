@@ -1,0 +1,28 @@
+services:
+  trainer:
+    build:
+      context: .
+      args:
+        UID: 1000            # TrueNAS apps: 568 (and chown the data dir to match)
+    image: cfn-trainer:latest
+    restart: unless-stopped
+    env_file: .env           # TRAINER_USERS / TRAINER_HOST ... (git-ignored, see .env.example)
+    ports:
+      - "47651:47651"        # put a TLS reverse proxy in front; use "127.0.0.1:47651:47651" if it runs on this host
+    volumes:
+      - trainer-data:/data   # or a TrueNAS dataset path, e.g. /mnt/tank/apps/cfn-trainer:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:47651/healthz', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    mem_limit: 1g
+    cpus: 2
+    pids_limit: 256
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+
+volumes:
+  trainer-data:

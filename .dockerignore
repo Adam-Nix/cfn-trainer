@@ -1,0 +1,12 @@
+.git
+.venv
+__pycache__
+work
+users
+data
+progress.json
+*.env
+.env*
+users.txt
+*.bat
+*.command
