@@ -684,6 +684,7 @@ $("#quit").addEventListener("click", async () => {
 
 window.addEventListener("hashchange", route);
 api("health").then(hh => {
+  if (hh.hosted) { const q = $("#quit"); if (q) q.remove(); }
   if (!hh.cfn_lint) { const b = $("#health"); b.classList.add("on"); b.textContent = "cfn-lint is not installed, so grading will not work. Close this and run start.bat / start.command again."; }
 }).catch(() => { });
 route();
