@@ -1,0 +1,19 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t cfn-trainer .
+      - name: Hosting tests
+        run: docker run --rm cfn-trainer python tests.py
+      - name: Grader self-test
+        run: docker run --rm cfn-trainer python selftest.py
+      - name: Container starts and answers the healthcheck
+        run: |
+          docker run -d --name t -e TRAINER_USERS=ci:ci-test-pw -e TRAINER_HOST=cfn.test -p 47651:47651 cfn-trainer
+          for i in $(seq 20); do curl -fs localhost:47651/healthz && break; sleep 1; done
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: cfn.test' localhost:47651/)" = 401
+          test "$(curl -s -o /dev/null -w '%{http_code}' -u ci:ci-test-pw -H 'Host: cfn.test' localhost:47651/)" = 200
