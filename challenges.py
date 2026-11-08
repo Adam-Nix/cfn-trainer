@@ -223,7 +223,7 @@ C3 = r"""AWSTemplateFormatVersion: '2010-09-09'
 Description: VPC with one public subnet (Lab 5 basic)
 
 Resources:
-  MarkVPC:
+  AdamVPC:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: @@192.168.0.0/16||VPC CIDR@@
@@ -231,36 +231,36 @@ Resources:
       EnableDnsSupport: true
       Tags:
         - Key: Name
-          Value: Mark VPC
+          Value: Adam VPC
 
-  MarkInternetGateway:
+  AdamInternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
-          Value: MarkIGW
+          Value: AdamIGW
 
   InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
-      InternetGatewayId: !Ref @@MarkInternetGateway||the gateway to attach@@
-      VpcId: !Ref @@MarkVPC||the VPC to attach it to@@
+      InternetGatewayId: !Ref @@AdamInternetGateway||the gateway to attach@@
+      VpcId: !Ref @@AdamVPC||the VPC to attach it to@@
 
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref MarkVPC
+      VpcId: !Ref AdamVPC
       AvailabilityZone: !Select [0, !GetAZs ""]
       CidrBlock: @@192.168.1.0/24||a /24 that sits INSIDE the VPC CIDR@@
       MapPublicIpOnLaunch: @@true||auto-assign public IPs in a public subnet@@
       Tags:
         - Key: Name
-          Value: MarkPublicSubnet1
+          Value: AdamPublicSubnet1
 
-  MarkPublicRouteTable:
+  AdamPublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId: !Ref MarkVPC
+      VpcId: !Ref AdamVPC
       Tags:
         - Key: Name
           Value: PublicRouteTable
@@ -269,19 +269,19 @@ Resources:
     Type: AWS::EC2::Route
     DependsOn: @@InternetGatewayAttachment||route needs the IGW to be attached first@@
     Properties:
-      RouteTableId: !Ref MarkPublicRouteTable
+      RouteTableId: !Ref AdamPublicRouteTable
       DestinationCidrBlock: @@0.0.0.0/0||default route@@
-      GatewayId: !Ref @@MarkInternetGateway||send it to the IGW@@
+      GatewayId: !Ref @@AdamInternetGateway||send it to the IGW@@
 
   RouteTableAssociationPublic1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref @@PublicSubnet1||the subnet to make public@@
-      RouteTableId: !Ref MarkPublicRouteTable
+      RouteTableId: !Ref AdamPublicRouteTable
 
 Outputs:
   VpcId:
-    Value: !Ref MarkVPC
+    Value: !Ref AdamVPC
   PublicSubnetId:
     Value: !Ref PublicSubnet1
 """
@@ -291,7 +291,7 @@ C4 = r"""AWSTemplateFormatVersion: '2010-09-09'
 Description: VPC with public + private subnet and NAT gateway (Lab 5 NATGW)
 
 Resources:
-  MarkVPC:
+  AdamVPC:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: 192.168.0.0/16
@@ -299,21 +299,21 @@ Resources:
       EnableDnsSupport: true
       Tags:
         - Key: Name
-          Value: Mark VPC
+          Value: Adam VPC
 
-  MarkInternetGateway:
+  AdamInternetGateway:
     Type: AWS::EC2::InternetGateway
 
   InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
-      InternetGatewayId: !Ref MarkInternetGateway
-      VpcId: !Ref MarkVPC
+      InternetGatewayId: !Ref AdamInternetGateway
+      VpcId: !Ref AdamVPC
 
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref MarkVPC
+      VpcId: !Ref AdamVPC
       AvailabilityZone: !Select [0, !GetAZs ""]
       CidrBlock: 192.168.1.0/24
       MapPublicIpOnLaunch: true
@@ -321,65 +321,65 @@ Resources:
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref MarkVPC
+      VpcId: !Ref AdamVPC
       AvailabilityZone: !Select [1, !GetAZs ""]
       CidrBlock: 192.168.2.0/24
       MapPublicIpOnLaunch: @@false||private subnets must NOT hand out public IPs@@
 
-  MarkPublicRouteTable:
+  AdamPublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId: !Ref MarkVPC
+      VpcId: !Ref AdamVPC
 
   PublicRoute:
     Type: AWS::EC2::Route
     DependsOn: InternetGatewayAttachment
     Properties:
-      RouteTableId: !Ref MarkPublicRouteTable
+      RouteTableId: !Ref AdamPublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref MarkInternetGateway
+      GatewayId: !Ref AdamInternetGateway
 
   RouteTableAssociationPublic1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PublicSubnet1
-      RouteTableId: !Ref MarkPublicRouteTable
+      RouteTableId: !Ref AdamPublicRouteTable
 
-  MarkNATGatewayEIP:
+  AdamNATGatewayEIP:
     Type: AWS::EC2::EIP
     DependsOn: InternetGatewayAttachment
     Properties:
       Domain: @@vpc||EIP domain for use in a VPC@@
 
-  MarkNATGateway:
+  AdamNATGateway:
     Type: AWS::EC2::NatGateway
     Properties:
-      AllocationId: !GetAtt MarkNATGatewayEIP.@@AllocationId||GetAtt attribute that NAT gateways need@@
+      AllocationId: !GetAtt AdamNATGatewayEIP.@@AllocationId||GetAtt attribute that NAT gateways need@@
       SubnetId: !Ref @@PublicSubnet1||the NAT gateway lives in a PUBLIC subnet@@
 
-  MarkPrivateRouteTable:
+  AdamPrivateRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId: !Ref MarkVPC
+      VpcId: !Ref AdamVPC
 
   PrivateRoute:
     Type: AWS::EC2::Route
     Properties:
-      RouteTableId: !Ref MarkPrivateRouteTable
+      RouteTableId: !Ref AdamPrivateRouteTable
       DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref @@MarkNATGateway||private traffic goes out via the NAT (the Ref also creates the dependency)@@
+      NatGatewayId: !Ref @@AdamNATGateway||private traffic goes out via the NAT (the Ref also creates the dependency)@@
 
   RouteTableAssociationPrivate1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref @@PrivateSubnet1||associate the PRIVATE subnet@@
-      RouteTableId: !Ref @@MarkPrivateRouteTable||with the PRIVATE route table@@
+      RouteTableId: !Ref @@AdamPrivateRouteTable||with the PRIVATE route table@@
 
 Outputs:
   VpcId:
-    Value: !Ref MarkVPC
+    Value: !Ref AdamVPC
   NatGatewayId:
-    Value: !Ref MarkNATGateway
+    Value: !Ref AdamNATGateway
 """
 
 # ---------------------------------------------------------------- C5
@@ -387,7 +387,7 @@ C5 = r"""AWSTemplateFormatVersion: '2010-09-09'
 Description: VPC with two public subnets and a webserver in each (Lab 6 final combined)
 
 Resources:
-  MarkVPC:
+  AdamVPC:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: 192.168.0.0/16
@@ -395,16 +395,16 @@ Resources:
       EnableDnsSupport: true
       Tags:
         - Key: Name
-          Value: Mark VPC
+          Value: Adam VPC
 
-  MarkInternetGateway:
+  AdamInternetGateway:
     Type: AWS::EC2::InternetGateway
 
   InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
-      InternetGatewayId: !Ref MarkInternetGateway
-      VpcId: !Ref MarkVPC
+      InternetGatewayId: !Ref AdamInternetGateway
+      VpcId: !Ref AdamVPC
 
   PublicSubnet1:
     Type: AWS::EC2::Subnet
@@ -412,7 +412,7 @@ Resources:
       AvailabilityZone: !Select [0, !GetAZs ""]
       CidrBlock: 192.168.1.0/24
       MapPublicIpOnLaunch: true
-      VpcId: !Ref MarkVPC
+      VpcId: !Ref AdamVPC
 
   PublicSubnet2:
     Type: AWS::EC2::Subnet
@@ -420,39 +420,39 @@ Resources:
       AvailabilityZone: !Select [@@1||second AZ = index 1@@, !GetAZs ""]
       CidrBlock: @@192.168.2.0/24||next /24 inside the VPC@@
       MapPublicIpOnLaunch: true
-      VpcId: !Ref @@MarkVPC||subnet belongs to the VPC@@
+      VpcId: !Ref @@AdamVPC||subnet belongs to the VPC@@
 
-  MarkPublicRouteTable:
+  AdamPublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId: !Ref MarkVPC
+      VpcId: !Ref AdamVPC
 
   PublicRoute:
     Type: AWS::EC2::Route
     DependsOn: InternetGatewayAttachment
     Properties:
-      RouteTableId: !Ref MarkPublicRouteTable
+      RouteTableId: !Ref AdamPublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref MarkInternetGateway
+      GatewayId: !Ref AdamInternetGateway
 
   RouteTableAssociationPublic1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PublicSubnet1
-      RouteTableId: !Ref MarkPublicRouteTable
+      RouteTableId: !Ref AdamPublicRouteTable
 
   RouteTableAssociationPublic2:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref @@PublicSubnet2||associate subnet 2@@
-      RouteTableId: !Ref MarkPublicRouteTable
+      RouteTableId: !Ref AdamPublicRouteTable
 
   Allowhttp:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow HTTP and HTTPS to Public Subnet
-      GroupName: Mark SG
-      VpcId: !Ref MarkVPC
+      GroupName: Adam SG
+      VpcId: !Ref AdamVPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
@@ -477,7 +477,7 @@ Resources:
       KeyName: vockey
       Tags:
         - Key: Name
-          Value: Mark Web Server 1
+          Value: Adam Web Server 1
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
@@ -499,7 +499,7 @@ Resources:
       KeyName: vockey
       Tags:
         - Key: Name
-          Value: Mark Web Server 2
+          Value: Adam Web Server 2
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
@@ -517,7 +517,7 @@ Outputs:
     Value: !GetAtt WebServerInstance2.@@PublicIp||same@@
 
   VpcId:
-    Value: !Ref MarkVPC
+    Value: !Ref AdamVPC
 """
 
 # ---------------------------------------------------------------- C6 (network stack w/ exports)
@@ -532,7 +532,7 @@ Parameters:
     ConstraintDescription: Enter your public IPv4 address followed by /32.
 
 Resources:
-  markVPC:
+  adamVPC:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: 192.168.77.0/24
@@ -540,12 +540,12 @@ Resources:
       EnableDnsHostnames: true
       Tags:
         - Key: Name
-          Value: mark-VPC
+          Value: adam-VPC
 
   PublicSubnet:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref markVPC
+      VpcId: !Ref adamVPC
       CidrBlock: 192.168.77.0/25
       AvailabilityZone: !Select [0, !GetAZs '']
       MapPublicIpOnLaunch: true
@@ -553,7 +553,7 @@ Resources:
   PrivateSubnet:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref markVPC
+      VpcId: !Ref adamVPC
       CidrBlock: @@192.168.77.128/25||the other half of the /24, must not overlap the public /25@@
       AvailabilityZone: !Select [0, !GetAZs '']
       MapPublicIpOnLaunch: false
@@ -564,13 +564,13 @@ Resources:
   AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
-      VpcId: !Ref markVPC
+      VpcId: !Ref adamVPC
       InternetGatewayId: !Ref InternetGateway
 
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId: !Ref markVPC
+      VpcId: !Ref adamVPC
 
   PublicInternetRoute:
     Type: AWS::EC2::Route
@@ -602,7 +602,7 @@ Resources:
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId: !Ref markVPC
+      VpcId: !Ref adamVPC
 
   PrivateInternetRoute:
     Type: AWS::EC2::Route
@@ -621,8 +621,8 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow HTTP and SSH for the webservers
-      GroupName: Mark-SG Allow http and SSH
-      VpcId: !Ref markVPC
+      GroupName: Adam-SG Allow http and SSH
+      VpcId: !Ref adamVPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
@@ -639,7 +639,7 @@ Resources:
 
 Outputs:
   VPCId:
-    Value: !Ref markVPC
+    Value: !Ref adamVPC
     Export:
       Name: !Sub '${AWS::StackName}-@@VPCId||export suffix, ends up as <stack>-VPCId@@'
   PublicSubnetId:
@@ -663,7 +663,7 @@ Description: Two Apache webservers using subnets and a security group exported b
 Parameters:
   NetworkStackName:
     Type: String
-    Default: mark-network
+    Default: adam-network
     Description: Exact name of the already-created network stack.
   KeyName:
     Type: @@AWS::EC2::KeyPair::KeyName||key pair dropdown type@@
@@ -685,13 +685,13 @@ Resources:
         - Fn::ImportValue: !Sub '${NetworkStackName}-@@WebSecurityGroupId||name the network stack exported@@'
       Tags:
         - Key: Name
-          Value: mark-Public-WebServer
+          Value: adam-Public-WebServer
       UserData:
         Fn::Base64: |
           #!/bin/bash
           set -eu
           dnf install -y httpd
-          echo '<h1>mark public webserver</h1>' > /var/www/html/index.html
+          echo '<h1>adam public webserver</h1>' > /var/www/html/index.html
           systemctl enable --now httpd
 
   PrivateWebServer:
@@ -706,13 +706,13 @@ Resources:
         - Fn::ImportValue: !Sub '${NetworkStackName}-WebSecurityGroupId'
       Tags:
         - Key: Name
-          Value: mark-Private-WebServer
+          Value: adam-Private-WebServer
       UserData:
         Fn::Base64: |
           #!/bin/bash
           set -eu
           dnf install -y httpd
-          echo '<h1>mark private webserver</h1>' > /var/www/html/index.html
+          echo '<h1>adam private webserver</h1>' > /var/www/html/index.html
           systemctl enable --now httpd
 
 Outputs:
@@ -733,7 +733,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow HTTP and SSH access
-      GroupName: Mark-class-SG1
+      GroupName: Adam-class-SG1
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
@@ -1307,11 +1307,11 @@ CHALLENGES = [
          bonus=["Parameters for InstanceType/KeyName/AMI", "Application Load Balancer across both subnets",
                 "Mapping or SSM AMI", "Restrict SSH + add SG-to-SG rule"]),
     dict(id="network-stack", kind="fill", level=3, title="Multi-stack: network stack with exports",
-         lab="Lab 6 multi-stack (24-mark-network.yaml)", minutes=30, template=C6, reqs=REQ_C6,
+         lab="Lab 6 multi-stack (24-adam-network.yaml)", minutes=30, template=C6, reqs=REQ_C6,
          brief="Finish the network stack: CIDR, NAT wiring, SSH parameter, exports named <stack>-<Name>.",
          bonus=["Condition to skip NAT", "Second AZ", "Tags on everything"]),
     dict(id="servers-stack", kind="fill", level=3, title="Multi-stack: servers importing exports",
-         lab="Lab 6 multi-stack (25-mark-servers.yaml)", minutes=20, template=C7, reqs=REQ_C7,
+         lab="Lab 6 multi-stack (25-adam-servers.yaml)", minutes=20, template=C7, reqs=REQ_C7,
          prestack="network-stack",
          brief="Import the network stack's exports with Fn::ImportValue + Sub.",
          bonus=["Parameter for InstanceType with AllowedValues", "Condition for private server", "More outputs"]),

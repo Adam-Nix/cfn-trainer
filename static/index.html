@@ -263,7 +263,7 @@ const SAMPLE = `AWSTemplateFormatVersion: '2010-09-09'
 Description: Scratch template - replace me
 
 Resources:
-  MarkVPC:
+  AdamVPC:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: 10.0.0.0/16
@@ -274,7 +274,7 @@ Resources:
 Outputs:
   VpcId:
     Description: ID of the VPC
-    Value: !Ref MarkVPC
+    Value: !Ref AdamVPC
 `;
 
 let SNIPPETS = null;

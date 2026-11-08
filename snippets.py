@@ -94,7 +94,7 @@ Metadata:
 Outputs:
   VpcId:
     Description: ID of the VPC
-    Value: !Ref MarkVPC
+    Value: !Ref AdamVPC
     Export:
       Name: !Sub '${AWS::StackName}-VpcId'
   WebUrl:
@@ -120,7 +120,7 @@ Outputs:
   PublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref MarkVPC
+      VpcId: !Ref AdamVPC
       AvailabilityZone: !Select [1, !GetAZs '']
       CidrBlock: 192.168.2.0/24
       MapPublicIpOnLaunch: true

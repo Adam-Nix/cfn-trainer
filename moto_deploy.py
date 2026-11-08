@@ -32,7 +32,7 @@ def main():
         cf = boto3.client("cloudformation", region_name="us-east-1")
         try:
             if pre:
-                cf.create_stack(StackName="mark-network", TemplateBody=pre, Parameters=params_for(pre), Capabilities=caps)
+                cf.create_stack(StackName="adam-network", TemplateBody=pre, Parameters=params_for(pre), Capabilities=caps)
             cf.create_stack(StackName="trainer", TemplateBody=body, Parameters=params_for(body), Capabilities=caps)
             st = cf.describe_stacks(StackName="trainer")["Stacks"][0]
             res = cf.describe_stack_resources(StackName="trainer")["StackResources"]
